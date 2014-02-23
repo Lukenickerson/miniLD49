@@ -1,0 +1,113 @@
+{
+	"floors" : [
+		{
+			"name" 		: "Base"
+			,"image"	: "base.png"
+			,"jobName"	: "guard"
+			,"forSale"	: false
+			,"workerSpaces"	: 2
+		}
+		,{
+			"name"		: "Mine"
+			,"image"	: "mine.png"
+			,"jobName"	: "miner"
+			,"forSale"	: true
+			,"workerSpaces"	: 2
+			,"earn" : {
+				"ore" : 1
+			}			
+		}
+		,{
+			"name"		: "Traps"
+			,"image"	: "plain.png"
+			,"jobName"	: "guard"
+			,"forSale"	: true
+			,"workerSpaces"	: 2			
+		}	
+		,{
+			"name"		: "Experiment"
+			,"image"	: "plain.png"
+			,"jobName"	: "investigator"
+			,"forSale"	: true
+			,"workerSpaces"	: 2
+			,"earn" : {
+				"arcane" : 3
+			}
+			,"cost" : {
+				"souls" : 2
+			}
+		}	
+		,{
+			"name"		: "Library"
+			,"image"	: "plain.png"
+			,"jobName"	: "researcher"
+			,"forSale"	: true
+			,"workerSpaces"	: 2
+			,"earn" : {
+				"arcane" : 1
+			}			
+		}
+		,{
+			"name"		: "Storage"
+			,"image"	: "plain.png"
+			,"forSale"	: true
+		}
+		,{
+			"name"		: "Telescope"
+			,"image"	: "plain.png"
+			,"jobName"	: "astrologer"
+			,"forSale"	: true
+			,"workerSpaces"	: 2
+			,"earn" : {
+				"arcane" : 2
+			}			
+		}
+		,{
+			"name"		: "Portal"
+			,"image"	: "plain.png"
+			,"jobName"	: "gatekeeper"
+			,"forSale"	: true
+			,"workerSpaces"	: 2
+			,"earn" : {
+				"souls" : 3
+			}
+			,"cost" : {
+				"arcane" : 4
+			}
+		}
+		,{
+			"name"		: "Crypt"
+			,"image"	: "plain.png"
+			,"jobName"	: "undertaker"
+			,"forSale"	: true
+			,"workerSpaces"	: 1			
+			,"earn" : {
+				"souls" : 1
+			}			
+		}
+	]
+	,"goons" : [
+		{
+			"name"		: "Phantom Lord"
+			,"isUndead"	: true
+			,"forSale"	: false
+		}	
+		,{
+			"name"		: "Ghost"
+			,"isUndead"	: true
+			,"forSale"	: true
+			,"cost" : {
+				"souls" : 10
+			}
+		}
+		,{
+			"name"		: "Orc"
+			,"isUndead"	: false
+			,"forSale"	: true
+			,"cost" : {
+				"gold" : 10
+			}
+		}
+	]
+	
+}

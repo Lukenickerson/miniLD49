@@ -1,0 +1,291 @@
+html {
+	min-height: 100%;
+    margin: 0;
+    width: 100%;
+    height: auto;
+	background-color: #666;
+}
+body {
+	font-family: 'Arial', sans-serif;
+}
+
+button {
+    outline: none;
+	display: inline-block;
+}
+
+h1, h2 {
+	font-family: 'Original Surfer', cursive;
+}
+h1 {
+	font-size: 2em;
+}
+
+.blockList {
+	display: block;
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+/* =========== Header / Menus ============ */
+
+header {
+	display: block;
+	position: absolute; z-index: 20;
+	top: 3em; left: 10%;
+}
+	header h1 {
+		margin: 0; padding: 0.25em 0;
+		
+		font-size: 68px;
+		color: rgba(255,255,255,0.25);
+	}
+
+#controls {
+	position: absolute; z-index: 20;
+	left: 0; top: 0;
+	/* height: 3em; */
+	width: 100%;
+	background-color: rgba(200,200,255,0.6);
+	font-family: 'Share Tech', sans-serif;
+	/* text-shadow: -1px -1px 0 rgba(255,255,255,0.2), 0 0 0.2em rgba(255,255,255,0.2); */
+}
+	#currency {
+		display: block;
+	}
+	#currency ul {
+		display: block;
+		padding: 1em;
+		margin: 0;
+		list-style: none;
+	}
+	#currency ul > li {
+		display: inline-block;
+		margin: 0 1em;
+		padding: 0;
+	}
+
+		.currencyIcon {
+			display: inline-block;
+			margin: 0 1em;
+		}
+	
+	#hand {
+		display: none;
+		position: absolute;
+		top: 0; right: 0;		
+		width: 90px; height: 90px;
+		border: solid 0.25em rgba(200,200,255,0.6);
+		background-color: #333;
+		box-shadow: inset 0 0 1em rgba(0,0,0,0.5);
+	}
+
+
+
+/* ======== PopUp Menus ======== */
+	
+.popUp {
+	display: none;
+	position: fixed; z-index: 100;
+	top: 0; left: 0;
+	width: 92%; height: 92%;
+	margin: 1% 1%;
+	padding: 3%;
+	border-radius: 1em;
+	box-shadow: inset 0 0 1em white, 0 0 2em black;
+	background-color: rgba(200,200,255,0.9);
+	overflow: auto;
+}
+.popUp:after {
+	position: fixed;
+	top: 0; left: 0;
+	width: 10em; height: 10em;
+	background-color: rgba(255,0,0,0.9);
+}
+
+.closePopUp {
+	position: absolute; z-index: 101;
+	top: 0; right: 0;
+	font-size: 150%;
+	padding: 0.5em 1em;
+	background: black;
+	color: white;
+	border: solid 1px white;
+	border-radius: 1em;
+	cursor: pointer;
+}
+
+
+.buyFloor {
+	display: block;
+	padding: 1em 2em;
+	border-bottom: solid 1px rgba(0,0,0,0.5);
+	cursor: pointer;
+}
+.buyFloor:after {
+	content: "click to buy floor";
+}
+.buyFloor.canAfford:hover {
+	background-color: rgba(255,255,255,0.3);
+}
+.buyFloor.cannotAfford:hover {
+	background-color: rgba(255,0,0,0.7);
+}
+
+.emptyWorkerSpace {
+	display: inline-block;
+	padding: 1em;
+	width: 5em;
+	height: 5em;
+	margin: 0 1em 1em 0;
+	border: solid 1px black;
+}
+.viewAssignWorker:after {
+	content: "click to add worker";
+}
+
+.buyGoon {
+	display: inline-block;
+	padding: 1em;
+	width: 10em;
+	height: 5em;
+	margin: 0 1em 1em 0;
+	border: solid 1px black;
+}
+.buyGoon:after {
+	content: "click to buy goon worker";
+}
+
+.viewAssignWorker:after
+,.buyFloor:after
+,.buyGoon:after {
+	display: inline-block;
+	margin: 0.5em 1em;
+	float: right;
+	color: blue;
+	font-size: 80%;
+}
+
+	
+/* ======== Tower ======== */
+	
+#tower, .towerLayer {
+	display: block;
+	position: absolute;
+	top: 0; left: 0;
+	width: 100%;
+	height: 100%;
+	min-height: 100%;
+}
+#tower {
+	overflow: hidden;
+}
+.towerLayer {
+	height: inherit;
+}
+	#sky {
+		background-color: #9999ff;
+	}
+	
+	#ground {
+		top: 50%;
+		background-color: #333;
+	}	
+
+	#floors {
+		width: 80%;
+		max-width: 600px;
+		height: auto;
+		left: 10%; top: 200px;
+		background-color: rgba(40,40,40,0.3);
+	}
+	
+	#floors > div {
+		width: 100%;
+		height: 160px;
+		/* border: solid 1px green; */
+	}
+
+.floorTop
+,.floorBottom
+,.viewFloor
+,.viewAssignWorker
+,.buyGoon {
+	cursor: pointer;
+}
+.floorTop:hover
+,.floorBottom:hover {
+	border: solid 1px yellow;
+	margin: -1px -1px -1px -1px;
+}
+.floorBase {
+	background-color: #999;
+}
+
+.goon {
+	display: block;
+	position: absolute;
+	width: 100px;
+	height: 100px;
+	background-color: rgba(255,255,255,0.4);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Helpers */
+
+.clearfix:before,
+.clearfix:after {
+    content: " ";
+    display: table;
+}
+
+.clearfix:after {
+    clear: both;
+}
+
+.clearfix {
+    *zoom: 1;
+}
+
+
+/* === Media Queries for RESPONSIVE === */
+
+@media only screen and (max-height : 30em) {
+
+}
+
+@media only screen and (max-width : 1000px) {
+
+
+	
+}
+
+
+@media only screen and (max-width : 700px) {
+
+
+	
+}
+
+@media only screen and (max-width : 400px) {
+
+
+}
+
