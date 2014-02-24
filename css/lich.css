@@ -159,6 +159,9 @@ footer a {
 .viewAssignWorker:after {
 	content: "click to add worker";
 }
+.viewAssignWorker:hover {
+	background-color: rgba(255,255,255,0.25);
+}
 
 .buyGoon {
 	display: inline-block;
@@ -170,6 +173,9 @@ footer a {
 }
 .buyGoon:after {
 	content: "click to buy goon worker";
+}
+.buyGoon:hover {
+	background-color: rgba(255,255,255,0.25);
 }
 
 .viewAssignWorker:after

@@ -701,7 +701,9 @@ var PFGameClass = function ()
 			} else {
 				toon.decay = 150;
 				this.total.souls += 10;
-				this.total.gold += this.roll1d(3);
+				if (!toon.isGoon) {
+					this.total.gold += this.roll1d(10);
+				}
 			}
 			toon.isDead = true;
 			toon.$elt.addClass("dead");
@@ -710,6 +712,7 @@ var PFGameClass = function ()
 	
 	this.clearDead = function ()
 	{
+		var o = this;
 		for (var invaderKey in this.game.invaders) {
 			var invader = this.game.invaders[invaderKey];
 			if (invader.isDead) {
@@ -736,18 +739,23 @@ var PFGameClass = function ()
 					if (typeof goon.isImmortal !== 'boolean') goon.isImmortal = false;
 					// If the goon is the Phantom Lord, then RESPAWN
 					if (goon.isImmortal) {
-						console.log("Respawning Immortal " + goonKey);
+						console.log("Respawning Immortal " + goonKey);	
 						goon.isDead = false;
-						goon.$elt.fadeOut(3000, function(){
-							goon.isDead = false;
-							goon.hp = 30;
-							goon.$elt.removeClass("dead").fadeIn(500);
-						});
+						// Need closure fix here... http://stackoverflow.com/questions/21070431/how-to-loop-over-an-array-and-add-jquery-click-events
+						(function(g){
+							goon.$elt.fadeOut(2000, function(){
+								g.isDead = false;
+								g.hp = 30 + (o.total.arcane / 10);
+								g.$elt.removeClass("dead").fadeIn(500);
+							});
+						}(goon)); 
 					} else { // normal delete
 						console.log("Deleting Goon " + goonKey);
-						goon.$elt.fadeOut(500, function(){
-							goon.$elt.remove();
-						});
+						(function(g){
+							g.$elt.fadeOut(500, function(){
+								g.$elt.remove();
+							});
+						}(goon));
 						var floor = this.game.floors[goon.floorKey];
 						var keyPos = $.inArray(goonKey, floor.goonKeyArray);
 						floor.goonKeyArray.splice(keyPos, 1);
