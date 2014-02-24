@@ -32,6 +32,7 @@ var PFGameClass = function ()
 	this.data = {	// Get from JSON data
 		"floors" 	: {}
 		,"goons"	: {}
+		,"invaders" : {}
 		/*
 		"upgrades" 	: {}
 		,"groups"	: {}
@@ -43,7 +44,8 @@ var PFGameClass = function ()
 		,"floors" : {
 			"0" : {
 				"floorTypeId" : 0
-				,"workerGoonKeyArray" : [0]
+				,"goonKeyArray" : [0]
+				,"invaderKeyArray" : []
 			}
 		
 		}
@@ -53,7 +55,22 @@ var PFGameClass = function ()
 			"0" : {		// The Phantom Lord
 				"goonTypeId" : 0
 				,"$elt" : {}
+				,"facing" : "left"
+				,"speedX" : 0.1
+				,"speedY" : 0
+				,"x" : 0
+				,"y" : 0
+				,"floorKey" : "0"
+				,"isOutside" : false
+				,"hp"		: 30
+				,"damage"	: 2
+				,"isDead"	: false
+				,"isImmortal" : true
 			}
+		}
+		,"invaderKeyCounter" : 0
+		,"invaders" : {
+		
 		}
 		/*
 		,
@@ -75,13 +92,15 @@ var PFGameClass = function ()
 	};
 	this.floorHeight = 160;
 	this.floorWidth = 600;
+	this.meleeRange = 100;
+	this.maxInvaders = 5;
 	
 	// Calculated Game Data
 	this.topFloorsCount = 0;
 	this.bottomFloorsCount = 0;
 	this.total = {
-		"gold"		: 4000
-		,"souls" 	: 1000
+		"gold"		: 200
+		,"souls" 	: 40
 		,"arcane" 	: 0
 		,"stone"	: 0
 		,"ore"		: 0
@@ -101,7 +120,7 @@ var PFGameClass = function ()
 	
 	this.loop = function() {
 		var o = this;
-		console.log("loop");
+		//console.log("loop");
 	
 		o.total.gold 	+= (o.perSecond.gold * o.secondsPerLoop);
 		o.total.souls 	+= (o.perSecond.souls * o.secondsPerLoop);
@@ -124,36 +143,36 @@ var PFGameClass = function ()
 		o.displayNumber(o.total.minds, o.$mindsVal);
 		*/
 		o.displayTotals();
+		o.moveGoons();
+		o.moveInvaders();
 		
 		// Update these only every second or so... 
 		if ((o.loopIteration % o.loopModulus) == 0) {
 			o.calculatePerSecondValues();
 			
-			/*
-			o.calculateCoreValues();
-			o.displayPerSecondNumbers();
-			// Per click...
-			o.displayNumber(o.perClick.indMoney, o.$indMoneyPerClickVal);
-			o.displayNumber(o.perClick.polMoney, o.$polMoneyPerClickVal);
-			o.displayNumber(o.perClick.medMoney, o.$medMoneyPerClickVal);
-			o.displayNumber(o.perClick.votes, o.$votesPerClickVal);
-			o.displayNumber(o.perClick.minds, o.$mindsPerClickVal);
-			*/
-		} else if (((o.loopIteration + 1) % o.loopModulus) == 0) {
-			/*
-			o.displayProgress();
-			o.updateUpgradeAfford();
-			*/
-		} else if (((o.loopIteration + 2) % o.loopModulus) == 0) {
-			/*
-			if (o.flow.from != "" && o.flow.to != "") {
-				var flowSpeed = o.flow.baseSpeed + (o.flow.percentSpeed * o.total[o.flow.from]);
-				if (o.total[o.flow.from] >= flowSpeed) {
-					o.total[o.flow.from] -= flowSpeed;
-					o.total[o.flow.to] += (flowSpeed * o.flow.efficiency);
+			for (var goonKey in o.game.goons) {
+				var goon = o.game.goons[goonKey];
+				if (!goon.isDead) {
+					var r = o.roll1d(100);
+					if (r == 1) {
+						goon.facing = (goon.facing == "left") ? "right" : "left";
+						goon.speedX = o.getRandomSpeed();
+					} else if (r == 2) {
+						goon.speedX = o.getRandomSpeed();
+					}
 				}
 			}
-			*/
+
+		} else if (((o.loopIteration + 1) % o.loopModulus) == 0) {
+			console.log("Loop tick");
+			if (o.roll1d(50) == 1) {
+				o.addInvader();
+			}
+			o.doCombatRound();
+			o.clearDead();
+
+		} else if (((o.loopIteration + 2) % o.loopModulus) == 0) {
+
 		}
 		
 	
@@ -195,8 +214,9 @@ var PFGameClass = function ()
 			var floorTypeObj = this.data.floors[floorObj.floorTypeId];
 			h += '<div class="floor viewFloor floor_' + floorTypeObj.name + ' floorKey' + floorKey + '" '
 				+ ' data-floorkey="' + floorKey + '">'
-				+ 'Floor Key: ' + floorKey
-				+ ' floor number ' + f + '-' + floorTypeObj.name 
+				//+ 'Floor Key: ' + floorKey
+				//+ ' floor number ' + f + '-' 
+				+ '<span class="floorName">' + floorTypeObj.name + '</span>'
 				+ '</div>';
 			//if (floorTypeObj.name == "Base") foundGroundFloor = true;
 			//if (foundGroundFloor == true) {
@@ -206,7 +226,7 @@ var PFGameClass = function ()
 			//}
 		}
 		// Add top and bottom
-		h = '<div class="floorTop">TOP</div>' + h + '<div class="floorBottom">BOTTOM</div>';
+		h = '<div class="floorTop">Build Up</div>' + h + '<div class="floorBottom">Build Down</div>';
 		this.$floors.html(h);
 		
 		// Get Y coords of the base and adjust the ground
@@ -218,12 +238,12 @@ var PFGameClass = function ()
 		}
 		var basePos = $base.offset();
 		var groundHeight = basePos.top + this.floorHeight;
-		this.$ground.css("top", groundHeight);
+		this.$ground.css("top", groundHeight - 10);
 		
 		// Get full height and set this to the tower height
 		var totalFloorsHeight = ((this.game.floorArray.length + 2) * this.floorHeight);
 		this.$floors.css("height", totalFloorsHeight);
-		this.$tower.css("height", (totalFloorsHeight + 400)); // 
+		this.$tower.css("height", (totalFloorsHeight + 400 )); // 
 		
 		// Next step: populate the tower with things...
 		this.populateTower();
@@ -231,26 +251,45 @@ var PFGameClass = function ()
 	
 	this.populateTower = function ()
 	{
-		console.log("Populating the Tower with goons");
+		console.log("Populating the Tower with goons and invaders");
 		// Loop through all constructed rooms of the tower
 		for (var f in this.game.floorArray) {
 			var floorKey = this.game.floorArray[f];
 			var floor = this.game.floors[floorKey];
 			var $floor = this.$floors.find('.floorKey' + floorKey);
+			//=== Add Goons to the DOM
 			$floor.find(".goon").remove();
-			console.log("Floor " + floorKey + " workerGoonKeyArrray: [" + floor.workerGoonKeyArray + "]");
-			for (var i in floor.workerGoonKeyArray) {
-				var goonKey = floor.workerGoonKeyArray[i];
+			console.log("Floor " + floorKey + " workerGoonKeyArrray: [" + floor.goonKeyArray + "]");
+			for (var i in floor.goonKeyArray) {
+				var goonKey = floor.goonKeyArray[i];
 				var goon = this.game.goons[goonKey];
 				var goonType = this.data.goons[goon.goonTypeId];
 				var goonTypeName = goonType.name.replace(/\s+/g, ''); // Remove spaces
 				console.log("Goon key: " + goonKey + ", Type: " + goonType.name);
-				var goonHtml = '<div class="goon goon_' + goonTypeName + '">'
+				var h = '<div class="goon ' + goon.facing + 'Facing goon_' + goonTypeName 
+					+ ((goon.isDead) ? ' dead ' : '')
+					+ '">'
 					+ goonType.name
 					+ '</div>';
-				goon.$elt = $(goonHtml);
+				goon.$elt = $(h);
 				goon.$elt.appendTo($floor);
 			}
+			//=== Add Invaders to the DOM
+			$floor.find(".invader").remove();
+			for (var i in floor.invaderKeyArray) {
+				var invKey = floor.invaderKeyArray[i];
+				var invader = this.game.invaders[invKey];
+				var invaderType = this.data.invaders[invader.invaderTypeId];
+				var invaderTypeName = invaderType.name.replace(/\s+/g, ''); // Remove spaces
+				console.log("Invader key: " + invKey + ", Type: " + invaderType.name);
+				var h = '<div class="invader ' + invader.facing + 'Facing invader_' + invaderTypeName 
+					+ ((invader.isDead) ? ' dead ' : '')
+					+ '">'
+					+ invaderType.name
+					+ '</div>';
+				invader.$elt = $(h);
+				invader.$elt.appendTo($floor);
+			}			
 			//console.log($floor.html());
 		}
 		
@@ -276,7 +315,6 @@ var PFGameClass = function ()
 		}
 		this.bottomFloorsCount = b;
 		this.topFloorsCount = t;
-		
 	}
 	
 
@@ -292,8 +330,8 @@ var PFGameClass = function ()
 		if (floorTypeObj.workerSpaces == 0) {
 			availHtml = '<p>This floor does not have space for workers.</p>';
 		} else {
-			if (typeof floorObj.workerGoonKeyArray === 'undefined') floorObj.workerGoonKeyArray = [];
-			var workerCount = floorObj.workerGoonKeyArray.length;
+			if (typeof floorObj.goonKeyArray === 'undefined') floorObj.goonKeyArray = [];
+			var workerCount = floorObj.goonKeyArray.length;
 			var availCount = floorTypeObj.workerSpaces - workerCount;
 			//console.log("Worker Count: " + workerCount + ", Available Count: " + availCount);
 			
@@ -303,9 +341,10 @@ var PFGameClass = function ()
 					+ 'Worker Needed</li>';
 			}			
 			for (var i = 0; i < workerCount; i++) {
-				var workerGoon = this.game.goons[floorObj.workerGoonKeyArray[i]];
+				var workerGoon = this.game.goons[floorObj.goonKeyArray[i]];
 				var goonName = this.data.goons[workerGoon.goonTypeId].name;
-				workersHtml += '<li>' + goonName + ' {view} / {dismiss}</li>';
+				workersHtml += '<li>' + goonName  // + ' {view} / {dismiss}'
+					+ '</li>';
 			}
 		}
 		//console.log(workersHtml);
@@ -322,24 +361,42 @@ var PFGameClass = function ()
 	
 	this.refreshFloorPurchase = function (isTop) 
 	{
-		var h = "";
+		var o = this;
+		//var h = "";
+		var $floorList = this.$floorPurchase.find("ul").empty();
 		// Loop over all floor types
-		for (var fId in this.data.floors) {
-			var floor = this.data.floors[fId];
-			var cost = this.getFloorCost(isTop);
-			var affordableClass = (this.total.gold >= cost) ? "canAfford" : "cannotAfford";
-			h += '<li class="buyFloor ' + affordableClass + '" '
-				+ ' data-floortypeid="' + fId + '"'
-				+ ' data-istop="' + isTop + '"'
-				+ '>'
-				+ floor.name
-				+ ' <span class="cost">' + cost + '</span><span class="currencyIcon iconGold">Gold</span>'
-				//+ ' <button type="button" class="buyFloor">Buy Floor</button>'
-				+ '</li>';
+		for (var floorTypeId in this.data.floors) {
+			var floorType = this.data.floors[floorTypeId];
+			if (!floorType.forSale) {
+				// Not for sale
+			} else if (isTop && floorType.isBottomOnly || !isTop && floorType.isTopOnly) {
+				// Cannot build here
+			} else {
+				var cost = this.getFloorCost(isTop, floorType);
+				var affordableClass = (this.total.gold >= cost) ? "canAfford" : "cannotAfford";
+				var h = '<li class="buyFloor ' + affordableClass + '" '
+					+ ' data-floortypeid="' + floorTypeId + '"'
+					+ ' data-istop="' + isTop + '"'
+					+ '>'
+					+ floorType.name
+					+ ' <span class="cost">' + cost + '</span><span class="currencyIcon iconGold">Gold</span>'
+					+ ' <span class="floorDescription">' + floorType.description + '</span>';
+					//+ ' <button type="button" class="buyFloor">Buy Floor</button>'
+					+ '</li>';
+				var $li = $(h);
+				$li.click(function(e){
+					var $this = $(this);
+					var floorTypeId = $this.data("floortypeid");
+					var isTop = $this.data("istop");
+					o.buyFloor(isTop, floorTypeId);
+					e.preventDefault();
+				});
+				$li.appendTo( $floorList );
+			}
 		}
 		//h = '<ul class="blockList">' + h + '</ul>';
 		//h += '<button type="button" class="closePopUp">X</button>';
-		this.$floorPurchase.find("ul").html(h);
+		//this.$floorPurchase.find("ul").html(h);
 		this.$floorPurchase
 			.css({ "left": 0, "opacity" : 1 })
 			.fadeIn(100);
@@ -348,7 +405,8 @@ var PFGameClass = function ()
 	this.buyFloor = function (isTop, floorTypeId) 
 	{
 		var o = this;
-		var cost = o.getFloorCost(isTop);
+		var floorType = o.data.floors[floorTypeId];
+		var cost = o.getFloorCost(isTop, floorType);
 		if (o.total.gold > cost) {
 			o.eraseCurrency("gold", cost);
 			// Add floor to game data
@@ -356,7 +414,8 @@ var PFGameClass = function ()
 			var newFloorKey = o.game.floorKeyCounter.toString();
 			o.game.floors[newFloorKey] = {
 				"floorTypeId" : floorTypeId
-				,"workerGoonKeyArray" : []
+				,"goonKeyArray" : []
+				,"invaderKeyArray" : []
 			};
 			console.log("Adding floor, key = " + newFloorKey); console.log(isTop); console.log(this.game.floorArray);
 			if (isTop) {
@@ -377,19 +436,21 @@ var PFGameClass = function ()
 		});
 	}
 	
-	this.getFloorCost = function (isTop)
+	this.getFloorCost = function (isTop, floorType)
 	{
 		this.calculateFloorsCounts();
 		console.log("isTop=" + isTop + ", " + this.topFloorsCount + ", " + this.bottomFloorscount);
 		// Get cost based on distance from ground floor 
 		// *** ...and type of room
 		var floorCount = (isTop) ? this.topFloorsCount : this.bottomFloorsCount;
-		return (100 + (100 * floorCount));
+		var cost = (100 * floorType.purchaseCostMultiplier);
+		cost = cost + (cost * 0.9 * floorCount);
+		return cost;
 	}
 	
 	
 	
-	//============================================ GOONZ
+	//============================================ TOONS: GOONZ & INVADERS
 	
 	this.viewGoon = function (goonKey) 
 	{
@@ -441,15 +502,7 @@ var PFGameClass = function ()
 			for (var currency in goonTypeObj.cost) {
 				o.eraseCurrency(currency, goonTypeObj.cost[currency]);
 			}
-			// Add goon to game data
-			o.game.goonKeyCounter++;
-			var newGoonKey = o.game.goonKeyCounter.toString();
-			o.game.goons[newGoonKey] = {
-				"goonTypeId" : goonTypeId
-			};
-			console.log("Adding goon, key = " + newGoonKey + ", goonTypeId = " + goonTypeId); 
-			// Add goon as a worker to this floor
-			o.game.floors[floorKey].workerGoonKeyArray.push(newGoonKey);
+			o.addGoon(goonTypeId, floorKey);
 
 			o.$goonAssign.slideUp();		
 			
@@ -457,7 +510,257 @@ var PFGameClass = function ()
 		} else {
 			o.notify("You cannot afford this goon.");
 		}
+	}
 	
+	this.addGoon = function (goonTypeId, floorKey) 
+	{
+		if (Object.keys(this.game.goons).length > 100) return false;
+		var goonType = this.data.goons[goonTypeId];
+		// Add goon to game data
+		this.game.goonKeyCounter++;
+		var newKey = this.game.goonKeyCounter.toString();
+		this.game.goons[newKey] = {
+			"goonTypeId" : goonTypeId
+			,"$elt" : {}
+			,"facing" : ((this.roll1d(2) == 2) ? "left" : "right")
+			,"x" : 0
+			,"y" : 0
+			,"speedX" : this.getRandomSpeed()
+			,"speedY" : 0
+			,"floorKey" : floorKey
+			,"isOutside" : false
+			,"hp"		: goonType.hitPoints
+			,"isDead"	: false
+			,"damage"	: goonType.damage
+			,"isGoon"	: true
+		};
+		console.log("Adding goon, key = " + newKey + ", goonTypeId = " + goonTypeId);
+
+		// Add goon as a worker to this floor
+		this.game.floors[floorKey].goonKeyArray.push(newKey);
+		
+		return true;		
+	}
+	
+	this.addInvader = function (invaderTypeId) 
+	{
+		if (Object.keys(this.game.invaders).length > this.maxInvaders) return false;
+		// If not specified, then find a random invader type
+		if (typeof invaderTypeId !== 'numeric') {
+			invaderTypeId = this.roll1d(this.data.invaders.length) - 1;
+		}
+		var invaderType = this.data.invaders[invaderTypeId];
+		// Add invader to game data
+		this.game.invaderKeyCounter++;
+		var newKey = this.game.invaderKeyCounter.toString();
+		this.game.invaders[newKey] = {
+			"invaderTypeId" : invaderTypeId
+			,"$elt" : {}
+			,"facing" : "left"
+			,"x" : 2000
+			,"y" : 0
+			,"speedX" : this.getRandomSpeed()
+			,"speedY" : 0
+			,"floorKey" : "0"
+			,"isOutside" : true
+			,"hp"		: invaderType.hitPoints
+			,"isDead"	: false
+			,"damage"	: invaderType.damage
+			,"isGoon"	: false
+		};
+		console.log("Adding invader, key = " + newKey + ", invaderTypeId = " + invaderTypeId); 
+		
+		// Invader always starts on the base floor
+		this.game.floors["0"].invaderKeyArray.push(newKey);
+		this.populateTower();
+		
+		return true;		
+	}	
+	
+	this.getRandomSpeed = function () {
+		return (0.25 + (this.roll1d(20) / 10));
+	}
+	
+	this.moveGoons = function ()
+	{
+		for (var goonKey in this.game.goons) {
+			var goon = this.game.goons[goonKey];
+			var goonType = this.data.goons[goon.goonTypeId];
+			this.moveToon(goon, goonType);
+		}
+	}
+	
+	this.moveInvaders = function ()
+	{
+		for (var invaderKey in this.game.invaders) {
+			var invader = this.game.invaders[invaderKey];
+			var invaderType = this.data.invaders[invader.invaderTypeId];
+			this.moveToon(invader, invaderType);
+		}
+	}
+	
+	this.moveToon = function (toon, toonType) 
+	{
+		var toonWidth = toon.$elt.width();
+		var maxX = this.floorWidth - toonWidth;
+		
+		if (toon.facing == "left") {
+			toon.x -= toon.speedX;
+			toon.$elt.addClass("leftFacing").removeClass("rightFacing");
+		} else if (toon.facing == "right") {
+			toon.x += toon.speedX;
+			toon.$elt.addClass("rightFacing").removeClass("leftFacing");
+		}
+		if (toon.x <= 0) {
+			toon.x = 0;
+			toon.facing = "right";
+			toon.speedX = this.getRandomSpeed();
+		} else if (toon.x >= maxX) {
+			if (!toon.isOutside) {
+				toon.x = maxX;
+				toon.facing = "left";
+				toon.speedX = this.getRandomSpeed();
+			}
+		} else {
+			toon.isOutside = false;
+		}
+		if (toon.isDead) {
+			toon.speedX -= 1;
+			if (toon.speedX < 0) toon.speedX = 0;
+		} else { 	// If alive, then hop
+			if (toon.y <= 0) toon.speedY = 1;
+		}
+		toon.y += toon.speedY;
+		if (toon.y <= 0) toon.y = 0;
+		toon.speedY -= (0.1 * toonType.weightMultiplier); // Gravity
+		
+		toon.$elt.css({ "left" : toon.x, "bottom" : toon.y });		
+	}
+	
+	this.doCombatRound = function ()
+	{
+		var o = this;
+		// Loop through all floors
+		for (var f in this.game.floorArray) {
+			var floorKey = this.game.floorArray[f];
+			var floor = this.game.floors[floorKey];
+			// Loop through all invaders on this floor
+			for (var i in floor.invaderKeyArray) {
+				var invKey = floor.invaderKeyArray[i];
+				var invader = this.game.invaders[invKey];
+				if (!invader.isDead) {
+					var invaderType = this.data.invaders[invader.invaderTypeId];
+					// Loop through all goons on this floor to see if there are any in melee range
+					for (var g in floor.goonKeyArray) {
+						var goonKey = floor.goonKeyArray[g];
+						var goon = this.game.goons[goonKey];
+						if (!goon.isDead) {
+							var goonType = this.data.goons[goon.goonTypeId];
+							var dist = o.getDistanceBetween(goon.x, goon.y, invader.x, invader.y);
+							if (dist < o.meleeRange) {
+								var toHitRoll = o.roll1d(10);
+								if (toHitRoll > 6) {
+									o.damageToon(goon, invader.damage);
+								}
+								toHitRoll = o.roll1d(10);
+								if (toHitRoll > 6) {
+									o.damageToon(invader, goon.damage);
+								}
+							}
+						}
+					}
+				}
+			}
+		}	
+	}
+	
+	this.damageToon = function (toon, damage) 
+	{
+		toon.hp -= damage;
+		var $dmg = $('<div class="damage">' + damage + '</div>');
+		var toonPos = toon.$elt.position();
+		//console.log(toonPos);
+		$dmg.css({
+			"left" : toonPos.left + 50
+			,"top" : toonPos.top
+		});
+		toon.$elt.closest('.floor').append($dmg);
+		$dmg.animate({
+			"opacity" : 0
+			,"bottom" : 0
+		}, 1000, function(){
+			$dmg.remove();
+		});
+		if (toon.hp <= 0) {
+			if (typeof toon.isImmortal !== 'boolean') toon.isImmortal = false;
+			if (toon.isImmortal) {
+				toon.decay = 60;
+			} else if (toon.isUndead) {
+				toon.decay = 100;
+				this.total.souls += this.roll1d(9);
+			} else {
+				toon.decay = 150;
+				this.total.souls += 10;
+				this.total.gold += this.roll1d(3);
+			}
+			toon.isDead = true;
+			toon.$elt.addClass("dead");
+		}
+	}
+	
+	this.clearDead = function ()
+	{
+		for (var invaderKey in this.game.invaders) {
+			var invader = this.game.invaders[invaderKey];
+			if (invader.isDead) {
+				invader.decay--;
+				if (invader.decay < 0) {
+					console.log("Clearing Invader " + invaderKey);
+					invader.$elt.fadeOut(500, function(){
+						invader.$elt.remove();
+					});
+					var floor = this.game.floors[invader.floorKey];
+					var keyPos = $.inArray(invaderKey, floor.invaderKeyArray);
+					floor.invaderKeyArray.splice(keyPos, 1);
+					delete this.game.invaders[invaderKey];
+				}
+			}
+		}
+		for (var goonKey in this.game.goons) {
+			var goon = this.game.goons[goonKey];
+			if (goon.isDead) {
+				goon.decay--;
+				if (goon.decay < 0) {
+					console.log("Clearing goon " + goonKey);
+					console.log(goon);
+					if (typeof goon.isImmortal !== 'boolean') goon.isImmortal = false;
+					// If the goon is the Phantom Lord, then RESPAWN
+					if (goon.isImmortal) {
+						console.log("Respawning Immortal " + goonKey);
+						goon.isDead = false;
+						goon.$elt.fadeOut(3000, function(){
+							goon.isDead = false;
+							goon.hp = 30;
+							goon.$elt.removeClass("dead").fadeIn(500);
+						});
+					} else { // normal delete
+						console.log("Deleting Goon " + goonKey);
+						goon.$elt.fadeOut(500, function(){
+							goon.$elt.remove();
+						});
+						var floor = this.game.floors[goon.floorKey];
+						var keyPos = $.inArray(goonKey, floor.goonKeyArray);
+						floor.goonKeyArray.splice(keyPos, 1);
+						delete this.game.goons[goonKey];
+					}
+				}
+			}
+		}		
+	}
+	
+	
+	this.getDistanceBetween = function (x1, y1, x2, y2) {
+		return Math.sqrt(Math.pow((x2 - x1), 2) + Math.pow((y2 - y1), 2));
 	}
 	
 	
@@ -489,7 +792,7 @@ var PFGameClass = function ()
 			var floorKey = this.game.floorArray[fIndex];
 			var floor = this.game.floors[floorKey];
 			var floorType = this.data.floors[floor.floorTypeId];
-			var numOfWorkers = floor.workerGoonKeyArray.length;
+			var numOfWorkers = floor.goonKeyArray.length;
 			if (typeof floorType.earn === "object") {
 				for (var currency in floorType.earn) {
 					this.perSecond[currency] += (floorType.earn[currency] * numOfWorkers);
@@ -561,6 +864,7 @@ var PFGameClass = function ()
 					//o.data.groups 	= responseObj.groups;
 					o.data.floors 	= responseObj.floors;
 					o.data.goons 	= responseObj.goons;
+					o.data.invaders = responseObj.invaders;
 					console.log("Ajax Success loading data");
 				} catch (err) {
 					o.notify("ERROR IN JSON DATA");
@@ -608,10 +912,10 @@ var PFGameClass = function ()
 				
 			} else if ($target.hasClass("floorBottom")) {
 				o.refreshFloorPurchase(false);
-			} else if ($target.hasClass("buyFloor")) {
-				var floorTypeId = $target.data("floortypeid");
-				var isTop = $target.data("istop");
-				o.buyFloor(isTop, floorTypeId);
+			//} else if ($target.hasClass("buyFloor")) {
+			//	var floorTypeId = $target.data("floortypeid");
+			//	var isTop = $target.data("istop");
+			//	o.buyFloor(isTop, floorTypeId);
 			} else if ($target.hasClass("viewAssignWorker")) {
 				var floorKey = $target.data("floorkey");
 				$target.closest('.popUp').hide(200);
@@ -627,51 +931,6 @@ var PFGameClass = function ()
 		});
 		
 		/*
-		var $indClicker = $('section.industry .clicker');
-		var $polClicker = $('section.politics .clicker');
-		var $medClicker = $('section.media .clicker');
-		o.$indMoneyVal 			= $('section.industry .money .val');
-		o.$indMoneyPerClickVal 	= $('section.industry .profitPerClick .val');
-		o.$indMoneyPerSecondVal	= $('section.industry .profitPerSecond .val');
-		
-		o.$polMoneyVal 			= $('section.politics .money .val');
-		o.$polMoneyPerClickVal	= $('section.politics .profitPerClick .val');
-		o.$polMoneyPerSecondVal = $('section.politics .profitPerSecond .val');
-		o.$votesVal				= $('section.politics .votes .val');
-		o.$votesPerClickVal 	= $('section.politics .votesPerClick .val');
-		o.$votesPerSecondVal 	= $('section.politics .votesPerSecond .val');
-		
-		o.$medMoneyVal 				= $('section.media .money .val');
-		o.$medMoneyPerClickVal 		= $('section.media .profitPerClick .val');
-		o.$medMoneyPerSecondVal 	= $('section.media .profitPerSecond .val');
-		o.$mindsVal 				= $('section.media .minds .val');
-		o.$mindsPerClickVal 		= $('section.media .mindsPerClick .val');
-		o.$mindsPerSecondVal 		= $('section.media .mindsPerSecond .val');		
-		
-		o.$progressVal = $('section.progress .progressVal');
-		o.$progressBar = $('section.progress .progressBar');
-		
-		$indClicker.click(function(e){	o.industryClick(); });
-		$polClicker.click(function(e){	o.politicsClick(); });
-		$medClicker.click(function(e){	o.mediaClick(); });
-		
-		$('.openFoot').click(function(e){
-			var $this = $(this);
-			if ($this.hasClass("closeFoot")) {
-				
-				$this.removeClass("closeFoot");
-				//$('footer .foot').slideUp(400);
-				$('footer').removeClass("open");
-				$this.find('span').html("open");
-			} else {
-				$this.addClass("closeFoot");
-				//$('footer .foot').slideDown(400);
-				$('footer').addClass("open");
-				$this.find('span').html("close");
-			}
-		});
-		*/
-		
 		$('.save').click(function(e){
 			o.playSound("save1");
 			o.saveGame(true);
@@ -691,9 +950,11 @@ var PFGameClass = function ()
 			var x = o.toggleSound();
 			o.notify("Sound turned " + ((x) ? "ON" : "OFF"));
 		});
+		*/
 		
 		
 		/* Intro */
+		/*
 		$('.openWalkthru').click(function(e){
 			$(this).fadeOut(200);
 			$('section.intro').fadeOut(1000, function(){
@@ -709,55 +970,8 @@ var PFGameClass = function ()
 				o.loadGame(true);
 			});
 		});
-		
-		
-		
-		
-		var $arrows = $('.focus .arrow');
-		$arrows.click(function(e){
-			var $thisArrow = $(this);
-			if ($thisArrow.hasClass("active")) {
-				$arrows.removeClass("active");
-				o.flow.from = "";
-				o.flow.to = "";
-			} else {
-				o.playSound("transfer1");
-				$arrows.removeClass("active");
-				$thisArrow.addClass("active");
-				o.flow.from = $thisArrow.data("flowfrom");
-				o.flow.to = $thisArrow.data("flowto");
-			}
-		});
-		
-		o.$upgradeLists = {};
-		
-		$('.metrics').click(function(e){
-			$(this).find('.perClick').toggle(300);
-		});
-		
-		for (var s in o.sectorArray) {
-			(function(sector){
-				o.$upgradeLists[sector] = $('section.' + sector + ' ul.upgradeList');
-				//console.log("Adding click event to List for sector: " + sector);
-				//console.log(o.$upgradeLists[sector]);
-				
-				o.$upgradeLists[sector].on("click", function(e){
-					
-					var $target = $(e.target);
-					var $ugli = $target.closest('li.upgrade');
-					//console.log("List Clicked - sector: " + sector);
-					//console.log($ugli);
+		*/
 
-					if ($target.hasClass("buy") || $target.parent().hasClass("buy")) {
-						var upgradeIndex = $ugli.data("ugi");
-						o.buyUpgrade(sector, upgradeIndex);
-					} else {
-						//$ugli.find('.details').toggle();
-					}
-					e.stopPropagation();
-				});
-			}(o.sectorArray[s]));
-		}
 		
 		// Scroll Event
 		var $win = $(window);
