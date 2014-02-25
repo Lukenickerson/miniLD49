@@ -42,6 +42,15 @@ header {
 		color: rgba(255,255,255,0.2);
 		text-shadow: 0 0 0.5em #333366;
 	}
+	header .subTitle {
+		margin-top: -1.2em;
+		font-size: 150%;
+		font-family: 'Original Surfer', cursive;
+		text-align: center;
+		float: right;
+		
+	}
+
 
 #controls {
 	position: absolute; z-index: 20;
